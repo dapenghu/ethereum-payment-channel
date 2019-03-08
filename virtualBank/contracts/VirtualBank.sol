@@ -27,7 +27,7 @@ contract VirtualBank {
     enum State { Funding, Running, Liquidating, Closed }
 
     // balance sheet
-    Client[] _clients;
+    Client[] _balanceSheet;
 
     // liquidation information
     Liquidation _liquidation;
@@ -42,9 +42,9 @@ contract VirtualBank {
         require(balances[0] > 0 && balances[1] > 0);
         require(lock > 0);
 
-        _clients = new Client[2];
-        _clients[0] = Client(addrs[0], balances[0], false);
-        _clients[1] = Client(addrs[1], balances[1], false);
+        _balanceSheet = new Client[2];
+        _balanceSheet[0] = Client(addrs[0], balances[0], false);
+        _balanceSheet[1] = Client(addrs[1], balances[1], false);
 
         _liquidation = Liquidation(lock, 0, address(0), 0, 0);
         _state = State.Funding;
@@ -53,21 +53,21 @@ contract VirtualBank {
     function deposit() payable {
         require(state == State.Funding);
 
-        if(msg.sender == _clients[0].addr 
-         && msg.value == _clients[0].balance 
-         && !_clients[0].deposited) {
-            _clients[0].deposited = true;
+        if(msg.sender == _balanceSheet[0].addr 
+         && msg.value == _balanceSheet[0].balance 
+         && !_balanceSheet[0].deposited) {
+            _balanceSheet[0].deposited = true;
 
-        } else if (msg.sender == _clients[1].addr 
-                 && msg.value == _clients[1].balance 
-                 && !_clients[1].deposited) {
-            _clients[1].deposited = true;
+        } else if (msg.sender == _balanceSheet[1].addr 
+                 && msg.value == _balanceSheet[1].balance 
+                 && !_balanceSheet[1].deposited) {
+            _balanceSheet[1].deposited = true;
 
         } else {
             throw;
         }
 
-        if (_clients[0].deposited && _clients[1].deposited) {
+        if (_balanceSheet[0].deposited && _balanceSheet[1].deposited) {
             state = running;
         }
     }
@@ -78,6 +78,7 @@ contract VirtualBank {
     function liquidate(int nounce, int32[] balances, address waiverAddr, bytes peerSignature) {
         require(state == State.Running)
         require(balances.length == 2);
+        require((balances[0] + balances[1]) == (_balanceSheet[0].balance + _balanceSheet[1].balance));
         require(waiverAddr != address(0));
 
         // identify master liquidator
@@ -94,11 +95,11 @@ contract VirtualBank {
 
         // check peer's signature
         bytes32 hash = keccak256(abi.encodePacked(address(this), nounce, balances[0], balances[1], waiverAddr));
-        require(checkSignature(hash, peerSignature, _clients[peer].addr));
+        require(checkSignature(hash, peerSignature, _balanceSheet[peer].addr));
 
         // check new balance sheet
         require(balances[0] > 0 && balances[1] > 0);
-        require((balances[0] + balances[1]) == (_clients[0].balance + _clients[1].balance));
+        require((balances[0] + balances[1]) == (_balanceSheet[0].balance + _balanceSheet[1].balance));
 
         // 清盘
         _liquidation.nounce = nounce;
@@ -109,9 +110,9 @@ contract VirtualBank {
         state = State.Liquidating;
 
         // 更新资产负债表，将 Peer 的资产返还给Peer，己方的资产留下
-        _clients[master].balance = balances[master];
-        _clients[peer].balance = balances[peer];
-        _clients[peer].addr.send(balances[peer]);
+        _balanceSheet[master].balance = balances[master];
+        _balanceSheet[peer].balance = balances[peer];
+        _balanceSheet[peer].addr.send(balances[peer]);
 
     }
 
@@ -119,14 +120,14 @@ contract VirtualBank {
     function withdrawByMaster() {
         require(state == State.Liquidating);
         int master = _liquidation.master;
-        require(msg.sender == _clients[master].addr);
+        require(msg.sender == _balanceSheet[master].addr);
         require(NOW >= _liquidation.liquidateTime + _liquidation.lockPeriod);
 
         // update state;
         state = State.Closed;
 
         // send fund to master
-        int value = _clients[master].balance;
+        int value = _balanceSheet[master].balance;
         msg.sender.send(value);
     }
 
@@ -134,7 +135,7 @@ contract VirtualBank {
     function withdrawByPeer(int nounce, bytes waiverSignature) {
         require(state == State.Liquidating);
         int peer = 1 - _liquidation.master;
-        require(msg.sender == _clients[peer].addr);
+        require(msg.sender == _balanceSheet[peer].addr);
 
         // check signature of redepmtionPubKey
         bytes32 hash = keccak256(abi.encodePacked(address(this), nounce));
@@ -144,8 +145,8 @@ contract VirtualBank {
         state = State.Closed;
 
         // send fund to peer
-        int value = _clients[master].balance;
-        _clients[peer].addr.send(value);
+        int value = _balanceSheet[master].balance;
+        _balanceSheet[peer].addr.send(value);
     }
 
     function checkSignature( bytes32 hash, bytes signature, address expectedAddr) internal pure returns (bool){
