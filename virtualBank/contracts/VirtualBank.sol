@@ -5,13 +5,12 @@ import "zeppelin-solidity/contracts/AddressUtils.sol";
 import "zeppelin-solidity/contracts/ECRecovery.sol";
 
 /**
- * @title Virtual bank smart contract.
- * @dev abstract contract
+ * @title Virtual bank smart contract. Support RSMC and HTLC commitments.
+ * @dev Simulate the lightning network clearing protocol with Solidity programming language.
  */
 contract VirtualBank {
     using SafeMath for uint256;
     using ECRecovery for bytes32;
-//    using AddressUtils for address;
 
     string[2] constant NAMES = [string("Alice"), "Bob"];
 
@@ -142,14 +141,14 @@ contract VirtualBank {
     }
 
     /**
-     * @notice Alice or Bob submits RSMC commitment to virtual bank
+     * @notice Virtual bank cash a RSMC commitment which is submitted by Alice or Bob.
      * @param sequence          The sequence number of the commitment.
      * @param amounts           The amounts of new balance sheet
      * @param revocationLock    The revocation lock for attacker's findelity bond.
      * @param freezeTime        The freeze time for attacker's findelity bond.
      * @param defenderSignature The defender's signature.
      */
-    function rsmc(uint32 sequence, uint256[2] amounts, address revocationLock, uint freezeTime, bytes defenderSignature) 
+    function cashRsmc(uint32 sequence, uint256[2] amounts, address revocationLock, uint freezeTime, bytes defenderSignature) 
                 external isRunning() validAddress(revocationLock) {
 
         require((amounts[0] + amounts[1]) == (_clients[0].amount + _clients[1].amount), "Total amount doesn't match.");
@@ -170,7 +169,7 @@ contract VirtualBank {
     }
 
     /**
-     * @notice Alice or Bob submits HTLC commitment to virtual bank
+     * @notice Virtual bank cash a HTLC commitment which is submitted by Alice or Bob.
      * @param sequence          The sequence number of the commitment.
      * @param rsmcAmounts       Virtual bank settle fund according to this balance sheet if HTLC time lock expire.
      * @param revocationLock    The revocation lock for attacker's findelity bond.
@@ -181,7 +180,7 @@ contract VirtualBank {
      * @param htlcAmounts       Virtual bank settle fund according to this balance sheet if both time lock and hash lock are satisfied.
      * @param defenderSignature The defender's signature.
      */
-    function htlc(uint32  sequence,        uint256[2] rsmcAmounts, 
+    function cashHtlc(uint32  sequence,        uint256[2] rsmcAmounts, 
                   address revocationLock,  uint       freezeTime, 
                   bytes32 hashLock;        bytes      preimage;
                   uint    timeLock;        uint[2]    htlcAmounts;
