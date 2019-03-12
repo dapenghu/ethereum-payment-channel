@@ -13,6 +13,8 @@ contract VirtualBank {
     using ECRecovery for bytes32;
 //    using AddressUtils for address;
 
+    string[2] constant NAMES = [string("Alice"), "Bob"];
+
     struct Client {
         address addr;   // Alice's and Bob's addresses
         uint256 amount;      // amount of each account
@@ -30,8 +32,6 @@ contract VirtualBank {
 
     // enum for virtual bank state
     enum State { Funding, Running, Auditing, Closed }
-
-    string[2] constant NAMES = [string("Alice"), "Bob"];
 
     // balance sheets
     Client[2] _clients;
@@ -62,7 +62,7 @@ contract VirtualBank {
     event CommitmentRSMC(uint sequence, string attacker, 
                         uint256 amountAlice, uint256 amountBob, address revocationLock, uint requestTime, uint freezeTime);
 
-    event RevocationLockOpen(uint sequence, unit requestTime, address revocationLock);
+    event RevocationLockOpened(uint sequence, unit requestTime, address revocationLock);
 
     event CommitmentHTLC(uint sequence, string attacker, 
                         uint256 amountAliceRSMC, uint256 amountBobRSMC, address revocationLock, uint requestTime, uint freezeTime, 
@@ -253,7 +253,7 @@ contract VirtualBank {
         // check signature for revocation lock
         bytes32 msgHash = keccak256(abi.encodePacked(address(this), _commitment.sequence));
         require(checkSignature(msgHash, revocationSignature, _commitment.revocationLock));
-        emit RevocationLockOpen( _commitment.sequence, now, _commitment.revocationLock);
+        emit RevocationLockOpened( _commitment.sequence, now, _commitment.revocationLock);
 
         // Close virtual bank;
         state = State.Closed;
