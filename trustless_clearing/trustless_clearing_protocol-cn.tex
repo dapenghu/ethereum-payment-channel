@@ -2,32 +2,34 @@
 
 \documentclass[lang=cn]{elegantpaper}
 
-\title{ElegantPaper: 一个优美的 \LaTeX{} 工作论文模板}
+\title{基于支付通道的、去信任的、实时清算协议}
 
 \author{\href{https://github.com/dapenghu}{胡 大 鹏}\thanks{}}
 
 \institute{OK区块链工程院}
 
-\version{0.06}
+\version{0.1}
 
 \date{\today}
 
 \begin{document}
 
 \maketitle
-
 \begin{abstract}
 
-\noindent 比特币 Bitcoin, Ethereum and other blockchain-based cryptocurrencies, as deployed today, cannot scale for wide-spread use. A leading approach for cryptocurrency scaling is a smart contract mechanism called a payment channel which enables two mutually distrustful parties to transact efficiently (and only requires a single transaction in the blockchain to set-up). 
-Payment channels can be linked together to form a payment network, such that payments between any two parties can (usually) be routed through the network along a path that connects them. Crucially, both parties can transact without trusting hops along the route.
-In this paper, we propose a novel variant of payment channels, called Sprites, that reduces the worst-case “collateral cost” that each hop along the route may incur. The benefits of Sprites are two-fold. 
-1) In Lightning Network, a payment across a path of ` channels requires locking up collateral for ⇥(` ) time, where   is the time to commit an on-chain transaction. Sprites reduces this cost to ⇥(` +  ). 
-2) Unlike prior work, Sprites supports partial withdrawals and deposits, during which the channel can continue to operate without interruption.
-In evaluating Sprites we make several additional contributions. First, our simulation-based security model is the first formalism to model timing guarantees in payment channels. Our construc- tion is also modular, making use of a generic abstraction from folklore, called the “state channel,” which we are the first to formalize. We also provide a simulation framework for payment network protocols, which we use to confirm that the Sprites construction mitigates against throughput-reducing attacks.
+比特币是一种去中心化的电子现金支付系统，在没有可信金融中介的情况下，通过p2p网络实现了安全可靠的价值传输。优点是建立了内在的信任机制，大大降低了对于外部金融监管、风险控制的依赖性。但是同时也产生了三元不可能性问题，既：去中心化、性能、成本三者不可兼得。导致区块链扩容问题长期没有很好的解决方案，虽然比特币已经诞生了十年，区块链技术依然无法在金融领域中大规模应用。
+
+本文分析了比特币扩容困境的根本原因，解释为什么大区块、DAG、分片、侧链跨链、DPoS、PBFT等扩容方案都无法超越三元不可能原理的限制。然后介绍闪电网络的解决方案：基于支付通道的去信任实时清算协议。分析它相对于其它扩容方案的独特性与技术优势。
+
+由于比特币的脚步语言是基于堆栈的逆波兰表达式，使得闪电网络的白皮书晦涩难懂。为了便于读者阅读，本文在保证技术原理不变的前提下，使用 Solidity 语言重新介绍闪电网络的技术原理。然后分析它在性能、费用、实时性等方面的技术优势，以及存在的限制。另外还介绍了几种相关的技术进展和改进。最后指出，基于支付通道的去信任实时清算协议能够弥补底层区块链系统的不足，为金融系统提供了去信任的基础设施，而且能够满足现代支付体系的性能需求。
+
 
 \end{abstract}
 
-\section{示例}
+%----------------------------------------------------------------------------------------
+%	Section 1: Introduction
+%----------------------------------------------------------------------------------------
+\section{介绍}
 
 %----------------------------------------------------------------------------------------
 %	BIBLIOGRAPHY

@@ -2,3 +2,11 @@
 virtualBank/build/**
 
 trustless_clearing/.texpadtmp/**
+
+trustless_clearing/*.out
+trustless_clearing/*.log
+trustless_clearing/*.pdf
+trustless_clearing/*.gz
+trustless_clearing/*.aux
+*_bk.md
+*.pdf
