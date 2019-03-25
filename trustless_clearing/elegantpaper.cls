@@ -262,9 +262,36 @@
 
 
 \RequirePackage{listings} 
+\RequirePackage{lstSolidity}
+
 \definecolor{lightgrey}{rgb}{0.9,0.9,0.9}
 \definecolor{frenchplum}{RGB}{190,20,83}
-\lstset{language=[LaTeX]TeX,
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{solidity}{language=Java,
+    backgroundcolor=\color{codegray},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstdefinestyle{TeXStyle}{language=[LaTeX]TeX,
 	texcsstyle=*\bf\color{winered}\ttfamily,
 	basicstyle=\ttfamily,
 	numbers=none,
@@ -278,6 +305,8 @@
 	tabsize=2,
 	backgroundcolor=\color{lightgrey}
 }
+
+%\lstset{style=solidity}
 
 \bibliographystyle{aer}
 

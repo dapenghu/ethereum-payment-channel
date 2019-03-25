@@ -148,22 +148,26 @@ contract VirtualBank {
      * @param freezeTime        The freeze time for attacker's findelity bond.
      * @param defenderSignature The defender's signature.
      */
-    function cashRsmc(uint32 sequence, uint256[2] amounts, address revocationLock, uint freezeTime, bytes defenderSignature) 
+    function cashRsmc(uint32 sequence, uint256[2] amounts, address revocationLock, 
+                      uint freezeTime, bytes defenderSignature) 
                 external isRunning() validAddress(revocationLock) {
 
-        require((amounts[0] + amounts[1]) == (_clients[0].amount + _clients[1].amount), "Total amount doesn't match.");
+        require((amounts[0] + amounts[1]) == (_clients[0].amount + _clients[1].amount), 
+                "Total amount doesn't match.");
 
         // identify attacker's index
         uint8 attacker = findAttacker();
         uint8 defender = 1 - attacker;
 
         // check defender's signature over sequence, revocation lock, new balance sheet, freeze time
-        bytes32 msgHash = keccak256(abi.encodePacked(address(this), sequence, amounts[0], amounts[1], revocationLock, freezeTime));
+        bytes32 msgHash = keccak256(abi.encodePacked(address(this), sequence, 
+                                    amounts[0], amounts[1], revocationLock, freezeTime));
         require(checkSignature(msgHash, defenderSignature, _clients[defender].addr));
         
         uint requestTime = now;
 
-        emit CommitmentRSMC(sequence, NAMES[attacker], amounts[0], amounts[1], revocationLock, requestTime, freezeTime);
+        emit CommitmentRSMC(sequence, NAMES[attacker], amounts[0], amounts[1], 
+                            revocationLock, requestTime, freezeTime);
 
         _doCommitment(sequence, attacker, amounts, revocationLock, requestTime, freezeTime);
     }
@@ -171,13 +175,15 @@ contract VirtualBank {
     /**
      * @notice Virtual bank cash a HTLC commitment which is submitted by Alice or Bob.
      * @param sequence          The sequence number of the commitment.
-     * @param rsmcAmounts       Virtual bank settle fund according to this balance sheet if HTLC time lock expire.
+     * @param rsmcAmounts       Virtual bank settle fund according to this balance sheet if 
+     *                          HTLC time lock expire.
      * @param revocationLock    The revocation lock for attacker's findelity bond.
      * @param freezeTime        The freeze time for attacker's findelity bond.
      * @param hashLock          The hash lock in HTLC commitment.
      * @param preimage          The pre-image for the hash lock.
      * @param timeLock          The time lock in HTLC commitment.
-     * @param htlcAmounts       Virtual bank settle fund according to this balance sheet if both time lock and hash lock are satisfied.
+     * @param htlcAmounts       Virtual bank settle fund according to this balance sheet if 
+     *                          both time lock and hash lock are satisfied.
      * @param defenderSignature The defender's signature.
      */
     function cashHtlc(uint32  sequence,        uint256[2] rsmcAmounts, 
@@ -188,17 +194,21 @@ contract VirtualBank {
             external isRunning() validAddress(revocationLock){
 
         // check rsmcAmounts
-        require((rsmcAmounts[0] + rsmcAmounts[1]) == (_clients[0].balance + _clients[1].balance), "rsmcAmounts total amount doesn't match.");
+        require((rsmcAmounts[0] + rsmcAmounts[1]) == (_clients[0].balance + _clients[1].balance), 
+                "rsmcAmounts total amount doesn't match.");
 
         // check htlcAmounts
-        require((htlcAmounts[0] + htlcAmounts[1]) == (_clients[0].balance + _clients[1].balance), "htlcAmounts total amount doesn't match.");
+        require((htlcAmounts[0] + htlcAmounts[1]) == (_clients[0].balance + _clients[1].balance), 
+                "htlcAmounts total amount doesn't match.");
 
         // identify attacker's index
         uint8 attacker = findAttacker();
         uint8 defender = 1- attacker;
 
         // check defender signature over parameters
-        bytes32 msgHash = keccak256(abi.encodePacked(address(this), sequence, rsmcAmounts[0], rsmcAmounts[1], revocationLock, freezeTime, hashLock, timeLock, htlcAmounts[0], htlcAmounts[1]));
+        bytes32 msgHash = keccak256(abi.encodePacked(address(this), sequence, rsmcAmounts[0], 
+                                    rsmcAmounts[1], revocationLock, freezeTime, hashLock, 
+                                    timeLock, htlcAmounts[0], htlcAmounts[1]));
         require(checkSignature(msgHash, defenderSignature, _clients[defender].addr));
  
         uint requestTime = now;
@@ -245,7 +255,8 @@ contract VirtualBank {
      * @notice Defender solve the revocation lock, withdraws attacker's fidelity bond as penalty.
      * @param revocationSignature  Defender's signature to open the revocation lock.
      */
-    function withdrawByDefender(bytes revocationSignature) external isAuditing() onlyDefender(msg.sender) {
+    function withdrawByDefender(bytes revocationSignature) 
+            external isAuditing() onlyDefender(msg.sender) {
         uint attacker = _commitment.attacker;
         uint defender = 1 - attacker;
 
@@ -265,15 +276,19 @@ contract VirtualBank {
     }
 
     /**
-     * @notice Virtual bank settle defender's fund immediately, and freeze the attacker's fund as fidelity bond.
+     * @notice Virtual bank settle defender's fund immediately, and freeze the attacker's 
+     *         fund as fidelity bond.
      * @param sequence          The sequence number of the commitment.
      * @param attacker          The attacker's index.
      * @param amounts           Virtual bank settle fund according to this balance sheet
      * @param revocationLock    The revocation lock for attacker's findelity bond.
-     * @param requestTime       The time when virtual bank recieves the commitment, ie. the start time of fidelity bond freezing.
+     * @param requestTime       The time when virtual bank recieves the commitment, ie. 
+     *                          the start time of fidelity bond freezing.
      * @param freezeTime        How long attacker's findelity bond will be freezed.
      */
-    function _doCommitment(uint32 sequence, uint8 attacker, uint256[2] amounts, address revocationLock, uint requestTime, uint freezeTime) internal {
+    function _doCommitment(uint32 sequence, uint8 attacker, uint256[2] amounts, 
+            address revocationLock, uint requestTime, uint freezeTime) 
+            internal {
         _commitment.sequence = sequence;
         _commitment.attacker = attacker;
         _commitment.revocationLock = revocationLock;
@@ -290,7 +305,8 @@ contract VirtualBank {
         _clients[defender].addr.send(amounts[defender]);
 
         emit Withdraw(sequence, NAMES[defender], _clients[defender].addr, amounts[defender]);
-        emit FreezeFidelityBond(sequence, NAMES[attacker], amounts[attacker], revocationLock, requestTime + freezeTime);
+        emit FreezeFidelityBond(sequence, NAMES[attacker], amounts[attacker], revocationLock, 
+                                requestTime + freezeTime);
     }
 
     /**
