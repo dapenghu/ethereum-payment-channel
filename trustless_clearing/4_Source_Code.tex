@@ -5,7 +5,7 @@
 
 \subsection{虚拟银行智能合约}
 
-不失一般性，假设 Alice 和 Bob 两个用户在某一段时间内需要频繁的往来支付。于是双方协商建立共同的虚拟银行智能合约。这个合约模拟了一个微型银行，只有 Alice 和 Bob 两个账户。双方约定分别在虚拟银行中存入 100 美元，用 <100, 100> 表示 Alice 和 Bob 在资产负债表的初始余额。
+不失一般性，假设 Alice 和 Bob 两个用户在某一段时间内需要频繁的往来支付。于是双方协商建立共同的虚拟银行智能合约。这个合约模拟了一个微型银行，只有 Alice 和 Bob 两个账户。双方约定分别在虚拟银行中存入 100 美元，用 [100, 100] 表示 Alice 和 Bob 在资产负债表的初始余额。
 
 虚拟银行智能合约的源码位于：\href{https://github.com/dapenghu/solidity-bidirection-payment-channel/blob/master/virtualBank/contracts/VirtualBank.sol}{GitHub: Solidity Bidirection Payment Channel}。
 
@@ -17,7 +17,7 @@
         虚拟银行一共有4个状态，如下图所示。
         \begin{figure}[h!]
             \centering
-            \includegraphics[width=8cm, keepaspectratio]{../images/state_machine.png}
+            \includegraphics[width=12cm, keepaspectratio]{../images/state_machine.png}
             \caption{虚拟银行状态变换}
             \label{fig:state_machince}
         \end{figure}
@@ -37,7 +37,7 @@
     变量 \_commitment 记录 Alice 和 Bob 双方已经约定的承诺，包含如何分配虚拟银行的资产，以及承诺编号、进攻方、撤销锁、诚信保证金的冻结时间等。
     
 \end{itemize}
-
+\newpage
 \begin{lstlisting}[caption={虚拟银行智能合约数据结构.}, label={lst:data}]
 /**
 * @title Virtual bank smart contract. Support RSMC and HTLC commitments.
@@ -164,7 +164,7 @@ RSMC 承诺方案是最简单、也是最基础的承诺方案。它是 Alice �
             \item 提前交换一批撤销锁。比如先交换编号 1-100 的撤销锁。只是交换撤销锁地址，对应的私钥先不要交换。
         \end{itemize}
     
-    \item 创建初始的 RSMC 共同承诺：根据已经约定的出资额度<100, 100>, 双方彼此签署第一份 RSMC 承诺方案，编号为 \#1. 以上图为例：
+    \item 创建初始的 RSMC 共同承诺：根据已经约定的出资额度[100, 100], 双方彼此签署第一份 RSMC 承诺方案，编号为 \#1. 以上图为例：
         \begin{itemize}
         \item Alice 以防御方的身份，为右侧 1 号承诺方案签名，然后发给 Bob。
         \item Bob 以防御方的身份，为左侧 1 号承诺方案签名，然后发给 Alice。
@@ -179,10 +179,10 @@ RSMC 承诺方案是最简单、也是最基础的承诺方案。它是 Alice �
 
 \subsubsection{更新承诺方案}
 
-假如当前的承诺编号是 1，对应的资产分配方案是<100, 100>，如果 Alice 要向 Bob 支付 10 美元，双方的资金需要按照<90, 100> 达成一个新的承诺方案。这个过程分为两步：
+假如当前的承诺编号是 1，对应的资产分配方案是[100, 100]，如果 Alice 要向 Bob 支付 10 美元，双方的资金需要按照[90, 100] 达成一个新的承诺方案。这个过程分为两步：
 \begin{enumerate}
 
-    \item 生成新的 RSMC 共同承诺：根据已经约定的出资额度<90, 110>, 双方彼此签署第一份 RSMC 承诺方案，编号为 \#2. 以上图为例：
+    \item 生成新的 RSMC 共同承诺：根据已经约定的出资额度[90, 110], 双方彼此签署第一份 RSMC 承诺方案，编号为 \#2. 以上图为例：
         \begin{itemize}
             \item Alice 以防御方的身份，使用 Bob 的2号撤销锁，为右侧 2 号承诺方案签名，然后发给 Bob。
             \item Bob 以防御方的身份，使用 Alice 的2号撤销锁，为左侧 2 号承诺方案签名，然后发给 Alice。
@@ -205,12 +205,12 @@ RSMC 承诺方案是最简单、也是最基础的承诺方案。它是 Alice �
 \end{figure}
 
 \subsubsection{承诺方案兑现，关闭支付通道}
-达成共同承诺之后，任何一方可以选择在任何时候向虚拟银行提交最新的承诺方案，请求兑现双方的资产。还是接着上面的例子来讲。假设 Alice 要左侧提交编号为 N 的承诺方案，其中资产分配方案为: <50, 150>，此方案里已经有了 Bob 的签名，Alice 需要再加上自己的签名就可以广播的网络上，调用虚拟银行智能合约中的 cashRsmc() 方法，请求最终结算资产。
+达成共同承诺之后，任何一方可以选择在任何时候向虚拟银行提交最新的承诺方案，请求兑现双方的资产。还是接着上面的例子来讲。假设 Alice 要左侧提交编号为 N 的承诺方案，其中资产分配方案为: [50, 150]，此方案里已经有了 Bob 的签名，Alice 需要再加上自己的签名就可以广播的网络上，调用虚拟银行智能合约中的 cashRsmc() 方法，请求最终结算资产。
 
 下面是 cashRsmc() 函数的源码，它接受5个参数，分别是：
 \begin{itemize}
     \item 1. sequence: 承诺方案的编号
-    \item 2. balances：Alice 和 Bob 最终的资产分配方案，此例中为：<50, 150>
+    \item 2. balances：Alice 和 Bob 最终的资产分配方案，此例中为：[50, 150]
     \item 3. revocationLock: 编号为N，进攻方为 Alice 的撤销锁
     \item 4. freezeTime: 诚信保证金的冻结时间
     \item 5. defenderSignature：防御方，也就是 Bob 对此承诺方案的签名。证明 Bob 认可此承诺方案的所有配置。

@@ -306,6 +306,9 @@
 	backgroundcolor=\color{lightgrey}
 }
 
+\renewcommand{\lstlistingname}{源码}% Listing -> 源码
+\renewcommand{\lstlistlistingname}{源码列表}% List of Listings -> List of 源码
+
 %\lstset{style=solidity}
 
 \bibliographystyle{aer}
