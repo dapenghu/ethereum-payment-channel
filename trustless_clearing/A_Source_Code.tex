@@ -1,3 +1,8 @@
+\begin{appendices}
+
+%\appendixpage
+%\addappheadtotoc
+
 \section{技术详解：去信任的清算协议}
 本节具体阐述闪电网络清算协议的技术细节。对于技术细节不感兴趣的读者可以略过此部分，只需阅读\ref{sec:clearing}。
 
@@ -37,7 +42,6 @@
     变量 \_commitment 记录 Alice 和 Bob 双方已经约定的承诺，包含如何分配虚拟银行的资产，以及承诺编号、进攻方、撤销锁、诚信保证金的冻结时间等。
     
 \end{itemize}
-\newpage
 \begin{lstlisting}[caption={虚拟银行智能合约数据结构.}, label={lst:data}]
 /**
 * @title Virtual bank smart contract. Support RSMC and HTLC commitments.
@@ -422,8 +426,7 @@ Bob 和 Alice 协商后，拿到 Hash 锁以及锁定的时间，然后转过身
 
 如果是第二种情况，Carol 在HTLC承诺方案 \#M+1 中补上自己的签名，然后调用虚拟银行智能合约的 cashHtlc() 方法，请求虚拟银行结算。对应的源代码如下。cashHtlc() 函数会检查时间锁是否预期，如果预期那么按照原来的 [120, 80] 结算资产。如果没有预期，而且Hash锁也匹配，那么按照新的 [110, 90] 结算资产。
 
-\begin{lstlisting}[caption={兑现RSMC共同承诺}, label={lst:cashHtlc}]
-
+\begin{lstlisting}[caption={兑现HTLC共同承诺}, label={lst:cashHtlc}]
 /**
  * @notice Virtual bank cash a HTLC commitment which is submitted by Alice or Bob.
  * @param sequence          The sequence number of the commitment.
@@ -464,28 +467,23 @@ function cashHtlc(uint32  sequence,        uint256[2] rsmcAmounts,
     require(checkSignature(msgHash, defenderSignature, _clients[defender].addr));
     
     uint requestTime = now;
-    
     emit CommitmentHTLC(sequence, NAMES[attacker], 
                 rsmcAmounts[0], rsmcAmounts[1], revocationLock, requestTime, freezeTime,
                 hashLock, preimage, timeLock, htlcAmounts[0], htlcAmounts[1]);
     
     // check time lock
     if (requestTime >= timeLock){
-    emit TimeLockExpire(sequence, requestTime, timeLock);
-    
-    // if time lock expire, handle this commitment as RSMC
-    _doCommitment(sequence, attacker, rsmcAmounts, revocationLock, requestTime, freezeTime);
-    
+        emit TimeLockExpire(sequence, requestTime, timeLock);
+        // if time lock expire, handle this commitment as RSMC
+        _doCommitment(sequence, attacker, rsmcAmounts, revocationLock, requestTime, freezeTime);
     } else if {
-    // check msgHash lock
-    require (keccak256(preimage) == hashLock);
-    emit HashLockOpened(address(this), sequence, hashLock, preimage, requestTime);
-    
-    // if both time lock and hash lock are satisfied, handle this commitment as HTLC
-    _doCommitment(sequence, attacker, htlcAmounts, revocationLock, requestTime, freezeTime);
+        // check msgHash lock
+        require (keccak256(preimage) == hashLock);
+        emit HashLockOpened(address(this), sequence, hashLock, preimage, requestTime);
+        // if both time lock and hash lock are satisfied, handle this commitment as HTLC
+        _doCommitment(sequence, attacker, htlcAmounts, revocationLock, requestTime, freezeTime);
     }
 }
-
 \end{lstlisting}
 
 无论是哪一种方式，Bob 都向 Carol 支付了 10 美元，同时获得了暗语 R。而且与Alice 之间的承诺方案至少还有1个小时的时间，有足够的时间公示 R，从 Alice 那里获得 10 美元的补偿。同样，Bob 也有两种方式公开 R。如果选择私下里发送给 Alice，就需要再生成新的RSMC 承诺方案\#N+2, 并且撤销 HTLC 承诺方案\#N+1，最终的结果如下图所示：
@@ -497,3 +495,4 @@ function cashHtlc(uint32  sequence,        uint256[2] rsmcAmounts,
 \end{figure}
 
 至此，Alice 通过 Bob提供的过度资金向 Carol 支付了 10 美元。整个支付过程完毕。
+\end{appendices}

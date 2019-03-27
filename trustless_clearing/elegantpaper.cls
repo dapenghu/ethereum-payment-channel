@@ -42,8 +42,6 @@
 % more pretty font
 \linespread{1.3}
 
-
-
 % indentation, table and figure package
 \RequirePackage{indentfirst}
 \RequirePackage{booktabs}
@@ -53,7 +51,7 @@
 \RequirePackage{fancyvrb}
 \RequirePackage{type1cm}
 \RequirePackage{abstract}
-
+\RequirePackage[titletoc,title]{appendix}
 \graphicspath{{image/}{figure/}{fig/}{img/}}
 
 % caption settings 
@@ -145,13 +143,14 @@
 	\renewcommand\figurename{图} %
 	\renewcommand\tablename{表}%
 	\newcommand\versiontext{版本：}%
-	\newcommand\updatetext{更新：}%
+	\newcommand\updatetext{日期：}%
 	\renewcommand\abstractname{摘\hspace{2em}要}
 	\setlength{\parindent}{2em}
 	\renewcommand{\abstracttextfont}{\kaishu\sffamily\small}
 	\newcommand{\keywords}[1]{\vskip2ex\par\noindent\normalfont{\bfseries 关键词: } #1}
 	\newcommand\figref[1]{{\bfseries 图~\ref{#1}}}
 	\newcommand\tabref[1]{{\bfseries 表~\ref{#1}}}
+    \renewcommand{\appendixname}{附录}
 }{\relax}
 \ifdefstring{\ELEGANT@lang}{en}{
   \theoremstyle{plain}% default
@@ -247,8 +246,6 @@
   \end{center}%
   \par
 }
-  
-
 
 \DeclareSymbolFont{cmlargesymbols}{OMX}{cmex}{m}{n}
 \DeclareMathSymbol{\intop}{\mathop}{cmlargesymbols}{"5A}
@@ -260,7 +257,7 @@
 \DeclareMathSymbol{\prodop}{\mathop}{cmlargesymbols}{"59}
   \let\prod\prodop
 
-
+% source code listing
 \RequirePackage{listings} 
 \RequirePackage{lstSolidity}
 
@@ -271,25 +268,6 @@
 \definecolor{codegray}{rgb}{0.5,0.5,0.5}
 \definecolor{codepurple}{rgb}{0.58,0,0.82}
 \definecolor{backcolour}{rgb}{0.95,0.95,0.92}
-
-\lstdefinestyle{solidity}{language=Java,
-    backgroundcolor=\color{codegray},   
-    commentstyle=\color{codegreen},
-    keywordstyle=\color{magenta},
-    numberstyle=\tiny\color{codegray},
-    stringstyle=\color{codepurple},
-    basicstyle=\footnotesize,
-    breakatwhitespace=false,         
-    breaklines=true,                 
-    captionpos=b,                    
-    keepspaces=true,                 
-    numbers=left,                    
-    numbersep=5pt,                  
-    showspaces=false,                
-    showstringspaces=false,
-    showtabs=false,                  
-    tabsize=2
-}
 
 \lstdefinestyle{TeXStyle}{language=[LaTeX]TeX,
 	texcsstyle=*\bf\color{winered}\ttfamily,
@@ -309,7 +287,8 @@
 \renewcommand{\lstlistingname}{源码}% Listing -> 源码
 \renewcommand{\lstlistlistingname}{源码列表}% List of Listings -> List of 源码
 
-%\lstset{style=solidity}
+% add $$ notation for sections
+\renewcommand{\thesection}{\S\arabic{section}}
 
 \bibliographystyle{aer}
 
