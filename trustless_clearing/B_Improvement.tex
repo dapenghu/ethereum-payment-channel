@@ -1,0 +1,38 @@
+\begin{appendices}
+\section{技术的进一步拓展}
+自从闪电网络的白皮书公开之后，社区对其技术做了很多更加深入的研究，不断的优化去信任的实时清算协议。下面我们介绍三个相关的进展。
+
+\subsection{Sprites风格的 HTLC}
+\href{https://arxiv.org/abs/1702.05812}{Sprites and State Channels: Payment Networks that Go Faster than Lightning} 是2017年发表的一篇论文，它提出了一种新的 HTLC 承诺方案。这种方案被称为 Sprites-风格的 HTLC，对应的，闪电网络协议中 HTLC 被称为闪电-风格的HTLC。这种新的 HTLC 在2个方面对闪电网络协议提出了改进。
+
+\begin{itemize}
+    \item 支持支付通道部分存取款
+
+    在闪电网络协议中，用户一旦从虚拟银行中取款，其中的资产被全部结算，支付通道随即关闭。Sprites-风格 HTLC 支持部分取款。在不关闭虚拟银行的情况下，支付双方向可以向虚拟银行追加资金、或者部分提现。这样提高了支付通道的利用率，也节约了重新开启支付通道的成本。
+
+    \item 抵押资产优化
+
+    在闪电网络的协议中，HTLC 时间锁的大小和支付路径的长度有关系。假设支付路径的长度为L，如下图所示，按照从接收方到支付方的顺序，时间锁的大小分别为：T，2T ... L*T。在最糟糕的情况下，资产的锁定时间随着支付路径的增加而线性增长。Sprites-风格的HTLC 做了优化，令资产的锁定时间与路径的长度无关。
+\end{itemize}
+
+\subsection{Perun: 虚拟支付通道}
+在论文 \href{https://eprint.iacr.org/2017/635.pdf}{Perun: Virtual Payment Hubs over Cryptocurrencies} 中，又提出了一种新的支付通道链接技术，称之为“虚拟支付通道”，进一步改进了 HTLC。
+
+这种技术扩展了虚拟银行智能合约，为支付双方提供了额外的功能。举例来说，假设 Alice 和 Carol 之间没有支付通道，但是他们分别和 Bob 有支付通道连接。在闪电网络的协议中，Bob 作为中间人要分别和 Alice 和 Carol 进行支付。但是在虚拟支付通道的协议中，Bob 并不需要确认双方的交易，甚至于 Bob 临时的离线也没有影响。虚拟通道技术可以进一步降低交易的延时和费用，同时提高了支付系统的可用性。但是要指出的是，论文中只讨论了一个中间节点的情况，如果支付路径包含多个中间节点，依然是一个开放的研究课题。
+
+\subsection{广义状态通道 Generalized State Channels}
+支付通道的概念可以推广成为状态通道。在一个状态通道中，Alice 和 Bob 可以完成相对于支付更复杂的链下智能合约功能。比如说，在线游戏、资产交易等。在闪电网络中，Alice 和 Bob 在链下共同管理虚拟银行的债务分配方案。类似的，在状态通道中，双方在链下共同维护一个智能合约的状态，通过一种二元共识协议，对状态更新达成一致，不需要每次都公布到链上。任何一方都随时可以公开链下最新的状态并且同步到链上。
+
+论文 \href{https://www.counterfactual.com/statechannels/}{Counterfactual: Generalized State Channels} 系统的提出了广义状态通道的概念，并且为开发者提供了状态通道的开发框架，Dapp开发者使用其 API 就能方便的集成状态通道的技术。值得注意的是，此论文提出了 \textbf{Counterfactual} 的概念，用于概括哪些行为不用上链，可以在状态通道中管理。假设一个链上的真实事件为 X，已经被矿工确认，具有不可篡改、不可伪造、不可撤销性。那么对应的链下事实为 \textbf{Counterfactual of X}，它满足3个条件：
+
+\begin{enumerate}
+    \item 事件 X 还没有在链上被确认，也就是说它还没有被广播到链上。
+    \item 状态通道保证任何参与者都可以单方面广播 X，并且无风险的被矿工确认，成为链上事实。
+    \item 相关参与者的行为都假设 X 已经在链上发生了，仿佛 X 真的成为不可篡改、不可撤销的事实。
+\end{enumerate}
+
+以支付通道为例，一个支付事件 X 可以是 “在虚拟银行中，Alice 的账户减去 10 美元，Bob的账户增加 10 美元”, 那么对应的 \textbf{Counterfactual of X} 可以是一个 RSMC 承诺方案：“Alice 和 Bob 共同签署一个承诺方案：Alice 的账户减去 10 美元，Bob 的账户增加 10 美元”。所以闪电网络中的承诺方案可以看成是\textbf{Counterfactual of X}的一个特例。
+
+这个概念非常有价值，它不但给出了通用的状态通道的基本概念，而且也指出了链上交易的通道化的本质：构建一个可信的机制，使得智能合约的所有参与方，对于将要发生的链上事实提前达成一致，形成 \textbf{Counterfactual of X}。此事实虽然未发生，但是等同于发生，并且彼此互相信任对方，任何人都无法反悔。
+
+\end{appendices}

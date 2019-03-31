@@ -8,7 +8,10 @@ trustless_clearing/*.log
 trustless_clearing/*.pdf
 trustless_clearing/*.gz
 trustless_clearing/*.aux
+trustless_clearing/*.lol
+
 *_bk.md
 *.pdf
 
 *.toc
+
