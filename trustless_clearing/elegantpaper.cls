@@ -58,6 +58,7 @@
 \RequirePackage[font=small,labelfont={bf}]{caption} 
 \captionsetup[table]{skip=3pt}
 \captionsetup[figure]{skip=3pt}
+\RequirePackage{subcaption}
 
 % list/itemize/enumerate setting
 \RequirePackage[shortlabels]{enumitem}
