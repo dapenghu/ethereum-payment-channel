@@ -262,28 +262,28 @@
 \RequirePackage{listings} 
 \RequirePackage{lstSolidity}
 
-\definecolor{lightgrey}{rgb}{0.9,0.9,0.9}
+%\definecolor{lightgrey}{rgb}{0.9,0.9,0.9}
 \definecolor{frenchplum}{RGB}{190,20,83}
-
-\definecolor{codegreen}{rgb}{0,0.6,0}
-\definecolor{codegray}{rgb}{0.5,0.5,0.5}
-\definecolor{codepurple}{rgb}{0.58,0,0.82}
-\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
-
-\lstdefinestyle{TeXStyle}{language=[LaTeX]TeX,
-	texcsstyle=*\bf\color{winered}\ttfamily,
-	basicstyle=\ttfamily,
-	numbers=none,
-	breaklines=true,
-	keywordstyle=\bf\color{winered}\ttfamily,
-	commentstyle=\color{gray},
-	emph={elegantpaper,fontenc,fontspec,xeCJK,FiraMono,xunicode,newtxmath,figure,fig,image,img,table,itemize,enumerate,newtxtext,newtxtt,ctex,microtype,description,times,newtx,booktabs,tabular,PDFLaTeX,XeLaTeX,type1cm,BibTeX},
-	emphstyle={\color{frenchplum}},
-	morekeywords={DeclareSymbolFont,SetSymbolFont,toprule,midrule,bottomrule,institute,version,includegraphics,setmainfont,setsansfont,setmonofont ,setCJKmainfont,setCJKsansfont,setCJKmonofont,RequirePackage,figref,tabref,email,maketitle,keywords},
-	frame=none,
-	tabsize=2,
-	backgroundcolor=\color{lightgrey}
-}
+%
+%\definecolor{codegreen}{rgb}{0,0.6,0}
+%\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+%\definecolor{codepurple}{rgb}{0.58,0,0.82}
+%\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+%
+%\lstdefinestyle{TeXStyle}{language=[LaTeX]TeX,
+%	texcsstyle=*\bf\color{winered}\ttfamily,
+%	basicstyle=\ttfamily,
+%	numbers=none,
+%	breaklines=true,
+%	keywordstyle=\bf\color{winered}\ttfamily,
+%	commentstyle=\color{gray},
+%	emph={elegantpaper,fontenc,fontspec,xeCJK,FiraMono,xunicode,newtxmath,figure,fig,image,img,table,itemize,enumerate,newtxtext,newtxtt,ctex,microtype,description,times,newtx,booktabs,tabular,PDFLaTeX,XeLaTeX,type1cm,BibTeX},
+%	emphstyle={\color{frenchplum}},
+%	morekeywords={DeclareSymbolFont,SetSymbolFont,toprule,midrule,bottomrule,institute,version,includegraphics,setmainfont,setsansfont,setmonofont ,setCJKmainfont,setCJKsansfont,setCJKmonofont,RequirePackage,figref,tabref,email,maketitle,keywords},
+%	frame=none,
+%	tabsize=2,
+%	backgroundcolor=\color{lightgrey}
+%}
 
 \renewcommand{\lstlistingname}{源码}% Listing -> 源码
 \renewcommand{\lstlistlistingname}{源码列表}% List of Listings -> List of 源码
@@ -291,6 +291,16 @@
 % add $$ notation for sections
 \renewcommand{\thesection}{\S\arabic{section}}
 
-\bibliographystyle{aer}
+% Use the bibtex backend with the authoryear citation style (which resembles APA)
+%\RequirePackage[backend=bibtex,style=authoryear,natbib=true]{biblatex} 
+
+% The filename of the bibliography
+%\addbibresource{example.bib} 
+
+% Required to generate language-dependent quotes in the 
+%\RequirePackage[autostyle=true]{csquotes} 
+
+%\bibliographystyle{aer}
+%\bibliographystyle{ieeetr}
 
 

@@ -1,0 +1,15 @@
+{
+  "name": "virtualbank",
+  "version": "1.0.0",
+  "description": "Virtual Bank Smart Contract for Lightning Network",
+  "main": "truffle.js",
+  "scripts": {
+    "test": "test"
+  },
+  "keywords": [
+    "smart",
+    "contract"
+  ],
+  "author": "Dapeng Hu",
+  "license": "ISC"
+}

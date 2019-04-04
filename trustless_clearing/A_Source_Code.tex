@@ -27,7 +27,7 @@
             \centering
             \includegraphics[width=12cm, keepaspectratio]{../images/state_machine.png}
             \caption{虚拟银行状态变换}
-            \label{fig:state_machince}
+            \label{fig:A_state_machince}
         \end{figure}
         \begin{enumerate}
             \item Funding: 智能合约初始化完成之后进入 Funding 状态，Alice 和 Bob 根据约定的额度，调用depoit() 往虚拟银行里转账。Alice 和 Bob 都足额注入100美金之后，虚拟银行进入 Running 状态。
@@ -158,7 +158,7 @@ RSMC 协议模拟了银行资产清算的过程。
     \centering
     \includegraphics[width=12cm, keepaspectratio]{../images/dual_rsmc_3.png}
     \caption{RSMC 承诺方案}
-    \label{fig:rsmc_3}
+    \label{fig:A_rsmc_3}
 \end{figure}
 
 另外注意到，每一次承诺有左右两份，互为对偶承诺，二者的资产负债表和诚信保证金的冻结时间是一样的。
@@ -223,7 +223,7 @@ RSMC 协议模拟了银行资产清算的过程。
     \centering
     \includegraphics[width=12cm, keepaspectratio]{../images/dual_rsmc_3.png}
     \caption{RSMC 承诺方案}
-    \label{fig:rsmc_4}
+    \label{fig:A_rsmc_4}
 \end{figure}
 
 \subsubsection{承诺方案兑现，关闭支付通道}
@@ -401,7 +401,7 @@ function withdrawByDefender(bytes revocationSignature)
 
 \begin{figure}[h!]
     \centering
-    \includegraphics[width=12cm, keepaspectratio]{../images/channels.png}
+    \includegraphics[width=8cm, keepaspectratio]{../images/channels.png}
     \caption{支付路径}
     \label{fig:A_channels}
 \end{figure}
@@ -460,7 +460,7 @@ Bob 和 Alice 协商后，拿到 Hash 锁以及锁定的时间，然后转过身
 \begin{figure}[h!]
     \centering
     \includegraphics[width=12cm, keepaspectratio]{../images/bob_carol_3.png}
-    \caption{Carol 公开暗语 R，然后创建无期限的 RSMC 承诺方案替代临时的 HTLC 承诺方案}
+    \caption{Carol 公开暗语 R，创建无期限的 RSMC 承诺方案替代临时的 HTLC 承诺方案}
     \label{fig:A_bob_carol_3}
 \end{figure}
 
@@ -534,7 +534,7 @@ function cashHtlc(uint32  sequence,        uint256[2] rsmcAmounts,
 \begin{figure}[h!]
     \centering
     \includegraphics[width=12cm, keepaspectratio]{../images/alice_bob_3.png}
-    \caption{Bob 公开暗语 R，然后创建无期限的 RSMC 承诺方案替代临时的 HTLC 承诺方案}
+    \caption{Bob 公开暗语 R，创建无期限的 RSMC 承诺方案替代临时的 HTLC 承诺方案}
     \label{fig:A_alice_bob_3}
 \end{figure}
 

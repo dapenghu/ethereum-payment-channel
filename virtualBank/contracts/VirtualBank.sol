@@ -188,8 +188,8 @@ contract VirtualBank {
      */
     function cashHtlc(uint32  sequence,        uint256[2] rsmcAmounts, 
                   address revocationLock,  uint       freezeTime, 
-                  bytes32 hashLock;        bytes      preimage;
-                  uint    timeLock;        uint[2]    htlcAmounts;
+                  bytes32 hashLock,        bytes      preimage,
+                  uint    timeLock,        uint[2]    htlcAmounts,
                   bytes   defenderSignature) 
             external isRunning() validAddress(revocationLock){
 
@@ -224,7 +224,7 @@ contract VirtualBank {
             // if time lock expire, handle this commitment as RSMC
             _doCommitment(sequence, attacker, rsmcAmounts, revocationLock, requestTime, freezeTime);
 
-        } else if {
+        } else {
             // check msgHash lock
             require (keccak256(preimage) == hashLock);
             emit HashLockOpened(address(this), sequence, hashLock, preimage, requestTime);
@@ -316,7 +316,7 @@ contract VirtualBank {
     function findAttacker() internal view returns (uint8 attacker) {
         if (msg.sender == _clients[0].addr) {
             attacker = 0;
-        } else (msg.sender == _clients[1].addr) {
+        } else if (msg.sender == _clients[1].addr) {
             attacker = 1;
         } else {
             throw;
