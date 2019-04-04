@@ -88,7 +88,13 @@ module.exports = {
     timeout: 100000,
     useColors: true
   },
-
+  solc: {
+    optimizer: { 
+      // Turning on compiler optimization that removes some local variables during compilation
+      enabled: true,
+      runs: 200
+    }
+  },
   // Configure your compilers
   compilers: {
     solc: {
@@ -96,7 +102,7 @@ module.exports = {
       docker: false,        // Use "0.5.1" you've installed locally with docker (default: false)
       settings: {          // See the solidity docs for advice about optimization and evmVersion
        optimizer: {
-         enabled: false,
+         enabled: true,
          runs: 200
        },
        evmVersion: "byzantium"

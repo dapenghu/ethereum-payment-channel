@@ -14,10 +14,11 @@ contract VirtualBank {
 
     string[2] NAMES = [string("Alice"), "Bob"];
 
-    // balance sheets
-    uint160[2] _addrs;   // Alice's and Bob's addresses
-    uint256[2] _amounts;      // _amounts of each account
-    bool[2]    _depositeds;   // whether each account deposit enough fund
+    struct Client {
+        address addr;   // Alice's and Bob's addresses
+        uint256 amount;      // amount of each account
+        bool    deposited;   // whether each account deposit enough fund
+    }
 
     struct Commitment {
         uint32     sequence;
@@ -31,11 +32,14 @@ contract VirtualBank {
     // enum for virtual bank state
     enum State { Funding, Running, Auditing, Closed }
 
+    // balance sheets
+    Client[] public _clients = new Client[];
+
     // state of virtual bank
-    State  _state;
+    State public _state;
 
     // commitment data
-    Commitment  _commitment;
+    Commitment public _commitment;
 
     // Event for Virtual Bank State Transition
     event VirtualBankFunding(address alice, uint256 amountAlice, address bob, uint256 amountBob);
@@ -92,12 +96,12 @@ contract VirtualBank {
     }
 
     modifier onlyAttacker(address addr) {
-        require(addr == address(_addrs[_commitment.attacker]), "Only attacker can make this call.");
+        require(addr == _clients[_commitment.attacker].addr, "Only attacker can make this call.");
         _;
     }
 
     modifier onlyDefender(address addr) {
-        require(addr == address(_addrs[1 - _commitment.attacker]), "Only defender can make this call.");
+        require(addr == _clients[1 - _commitment.attacker].addr, "Only defender can make this call.");
         _;
     }
 
@@ -106,22 +110,22 @@ contract VirtualBank {
      * @param addrs  Addresses of Alice and Bob
      * @param amounts Balance amount of Alice and Bob
      */
-    constructor(uint160[2] memory addrs,  uint256[2] memory amounts) 
-    public validAddress(address(addrs[0]))  validAddress(address(addrs[1])) {
+    constructor(address[2] memory addrs,  uint256[2] memory amounts) public validAddress(addrs[0])  validAddress(addrs[1]){
         // Client storage alice = Client(addrs[0], amounts[0], false);
         // Client storage bob   = Client(addrs[1], amounts[1], false);
         // _clients = [Client(alice), bob];
         // _clients = new Client[](2);
-        // _addrs.push(addrs[0]);
-        // _addrs.push(addrs[1]);
-        _addrs = [addrs[0], addrs[1]];
-        _amounts = [amounts[0], amounts[1]];
-        _depositeds = [false, false];
+        // _clients[0].addr = addrs[0];
+        // _clients[0].amount = amounts[0];
+        // _clients[0].deposited = false;
+        // _clients[1].addr = addrs[1];
+        // _clients[1].amount = amounts[1];
+        // _clients[1].deposited = false;
 
         _commitment = Commitment(0, 0, address(0), 0, 0, [uint256(0), 0]);
         _state = State.Funding;
-        // emit VirtualBankFunding(_addrs[0], _amounts[0], 
-        //                         _addrs[1], _amounts[1]);
+        emit VirtualBankFunding(_clients[0].addr, _clients[0].amount, 
+                                _clients[1].addr, _clients[1].amount);
     }
 
     /**
@@ -129,22 +133,22 @@ contract VirtualBank {
      */
     function deposit()  external payable isFunding() {
 
-        if(msg.sender == address(_addrs[0]) && msg.value == _amounts[0] && !_depositeds[0]) {
-            _depositeds[0] = true;
+        if(msg.sender == _clients[0].addr && msg.value == _clients[0].amount && !_clients[0].deposited) {
+            _clients[0].deposited = true;
             emit Deposit("Alice", msg.sender, msg.value);
 
-        } else if (msg.sender == address(_addrs[1]) && msg.value == _amounts[1] && !_depositeds[1]) {
-            _depositeds[1] = true;
+        } else if (msg.sender == _clients[1].addr && msg.value == _clients[1].amount && !_clients[1].deposited) {
+            _clients[1].deposited = true;
             emit Deposit("Bob", msg.sender, msg.value);
 
         } else {
             revert();
         }
 
-        // If both Alice and Bob have _depositeds fund, virtual bank begin running.
-        if (_depositeds[0] && _depositeds[1]) {
+        // If both Alice and Bob have deposited fund, virtual bank begin running.
+        if (_clients[0].deposited && _clients[1].deposited) {
             _state = State.Running;
-            // emit VirtualBankRunning(_addrs[0], _amounts[0], _addrs[1], _amounts[1]);
+            emit VirtualBankRunning(_clients[0].addr, _clients[0].amount, _clients[1].addr, _clients[1].amount);
         }
     }
 
@@ -160,7 +164,7 @@ contract VirtualBank {
                       uint freezeTime, bytes calldata defenderSignature) 
                 external isRunning() validAddress(revocationLock) {
 
-        require((amounts[0] + amounts[1]) == (_amounts[0] + _amounts[1]), 
+        require((amounts[0] + amounts[1]) == (_clients[0].amount + _clients[1].amount), 
                 "Total amount doesn't match.");
 
         // identify attacker's index
@@ -170,7 +174,7 @@ contract VirtualBank {
         // check defender's signature over sequence, revocation lock, new balance sheet, freeze time
         bytes32 msgHash = keccak256(abi.encodePacked(address(this), sequence, 
                                     amounts[0], amounts[1], revocationLock, freezeTime));
-        // require(checkSignature(msgHash, defenderSignature, _addrs[defender]));
+        require(checkSignature(msgHash, defenderSignature, _clients[defender].addr));
         
         uint requestTime = now;
 
@@ -209,11 +213,11 @@ contract VirtualBank {
             external isRunning() validAddress(revocationLock){
 
         // check rsmcAmounts
-        require((rsmcAmounts[0] + rsmcAmounts[1]) == (_amounts[0] + _amounts[1]), 
+        require((rsmcAmounts[0] + rsmcAmounts[1]) == (_clients[0].amount + _clients[1].amount), 
                 "rsmcAmounts total amount doesn't match.");
 
         // check htlcAmounts
-        require((htlcAmounts[0] + htlcAmounts[1]) == (_amounts[0] + _amounts[1]), 
+        require((htlcAmounts[0] + htlcAmounts[1]) == (_clients[0].amount + _clients[1].amount), 
                 "htlcAmounts total amount doesn't match.");
 
         // identify attacker's index
@@ -224,7 +228,7 @@ contract VirtualBank {
         bytes32 msgHash = keccak256(abi.encodePacked(sequence, rsmcAmounts[0], 
                                     rsmcAmounts[1], revocationLock, freezeTime, hashLock, 
                                     timeLock, htlcAmounts[0], htlcAmounts[1]));
-        // require(checkSignature(msgHash, defenderSignature, _addrs[defender]));
+        require(checkSignature(msgHash, defenderSignature, _clients[defender].addr));
  
         uint requestTime = now;
 
@@ -317,7 +321,7 @@ contract VirtualBank {
 
         // send fund to defender now
         uint8 defender = 1 - _commitment.attacker;
-        address payable defenderAddr = address(_addrs[defender]);
+        address payable defenderAddr = address(uint160(_clients[defender].addr));
         defenderAddr.transfer(_commitment.amounts[defender]);
 
         // emit Withdraw(sequence, NAMES[defender], _clients[defender].addr, amounts[defender]);
@@ -330,9 +334,9 @@ contract VirtualBank {
      * @return 0 for Alice, and 1 for Bob
      */
     function findAttacker() internal view returns (uint8 attacker) {
-        if (msg.sender == address(_addrs[0])) {
+        if (msg.sender == _clients[0].addr) {
             attacker = 0;
-        } else if (msg.sender == address(_addrs[1])) {
+        } else if (msg.sender == _clients[1].addr) {
             attacker = 1;
         } else {
             revert();
