@@ -1,8 +1,8 @@
 pragma solidity ^0.5.1;
 
-import "zeppelin-solidity/contracts/math/SafeMath.sol";
-import "zeppelin-solidity/contracts/AddressUtils.sol";
-import "zeppelin-solidity/contracts/ECRecovery.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "openzeppelin-solidity/contracts/utils/Address.sol";
+import "openzeppelin-solidity/contracts/cryptography/ECDSA.sol";
 
 /**
  * @title Virtual bank smart contract. Support RSMC and HTLC commitments.
@@ -10,9 +10,9 @@ import "zeppelin-solidity/contracts/ECRecovery.sol";
  */
 contract VirtualBank {
     using SafeMath for uint256;
-    using ECRecovery for bytes32;
+    using ECDSA for bytes32;
 
-    string[2] constant NAMES = [string("Alice"), "Bob"];
+    string[2] NAMES = [string("Alice"), "Bob"];
 
     struct Client {
         address addr;   // Alice's and Bob's addresses
@@ -33,13 +33,13 @@ contract VirtualBank {
     enum State { Funding, Running, Auditing, Closed }
 
     // balance sheets
-    Client[2] _clients;
+    Client[2] public _clients;
 
     // state of virtual bank
-    State _state;
+    State public _state;
 
     // commitment data
-    Commitment _commitment;
+    Commitment public _commitment;
 
     // Event for Virtual Bank State Transition
     event VirtualBankFunding(address alice, uint256 amountAlice, address bob, uint256 amountBob);
@@ -53,7 +53,7 @@ contract VirtualBank {
     // Event for Fund deposit, Freeze and Withdraw
     event Deposit(string name, address addr, uint256 amountAlice);
 
-    event FreezeFidelityBond(uint sequence, string attackerName, uint256 amount, address revocationLock, unit expireTime);
+    event FreezeFidelityBond(uint sequence, string attackerName, uint256 amount, address revocationLock, uint expireTime);
 
     event Withdraw(uint sequence, string recipient, address addr, uint256 amount);
 
@@ -61,28 +61,28 @@ contract VirtualBank {
     event CommitmentRSMC(uint sequence, string attacker, 
                         uint256 amountAlice, uint256 amountBob, address revocationLock, uint requestTime, uint freezeTime);
 
-    event RevocationLockOpened(uint sequence, unit requestTime, address revocationLock);
+    event RevocationLockOpened(uint sequence, uint requestTime, address revocationLock);
 
     event CommitmentHTLC(uint sequence, string attacker, 
                         uint256 amountAliceRSMC, uint256 amountBobRSMC, address revocationLock, uint requestTime, uint freezeTime, 
-                        bytes32 hashLock,  bytes preimage, uint timeLock, uint amountAliceHTLC, unit amountBobHTLC);
+                        bytes32 hashLock,  bytes preimage, uint timeLock, uint amountAliceHTLC, uint amountBobHTLC);
 
-    event TimeLockExpire(uint sequence, unit requestTime, unit timeLock);
+    event TimeLockExpire(uint sequence, uint requestTime, uint timeLock);
 
-    event HashLockOpened(address virtualBank, uint sequence, bytes32 hashLock,  bytes preimage, unit time);
+    event HashLockOpened(address virtualBank, uint sequence, bytes32 hashLock,  bytes preimage, uint time);
 
     modifier isFunding() {
-        require(state == State.Funding,"Should be in Funding state.");
+        require(_state == State.Funding,"Should be in Funding state.");
         _;
     }
 
     modifier isRunning() {
-        require(state == State.Running,"Should be in Running state.");
+        require(_state == State.Running,"Should be in Running state.");
         _;
     }
 
     modifier isAuditing() {
-        require(state == State.Auditing,"Should be in Auditing state.");
+        require(_state == State.Auditing,"Should be in Auditing state.");
         _;
     }
 
@@ -104,16 +104,19 @@ contract VirtualBank {
     /**
      * @notice The contructor of virtual bank smart contract
      * @param addrs  Addresses of Alice and Bob
-     * @param amount Balance amount of Alice and Bob
+     * @param amounts Balance amount of Alice and Bob
      */
-    constructor(address[2] addrs, uint256[2] amounts) public validAddress(addrs[0])  validAddress(addrs[1]){
-        Client alice = Client(addrs[0], amounts[0], false);
-        Client bob   = Client(addrs[1], amounts[1], false);
-        _clients = [Client(alice), bob];
+    constructor(address[2] memory addrs,  uint256[2] memory amounts) public validAddress(addrs[0])  validAddress(addrs[1]){
+        // Client storage alice = Client(addrs[0], amounts[0], false);
+        // Client storage bob   = Client(addrs[1], amounts[1], false);
+        // _clients = [Client(alice), bob];
 
-        _commitment = Commitment(0, 0, address(0), 0, 0, new uint256[](2));
+        _clients = [Client(addrs[0], amounts[0], false), Client(addrs[1], amounts[1], false)];
+
+        _commitment = Commitment(0, 0, address(0), 0, 0, [uint256(0), 0]);
         _state = State.Funding;
-        emit VirtualBankFunding(alice.addr, alice.amount, bob.addr, bob.amount);
+        emit VirtualBankFunding(_clients[0].addr, _clients[0].amount, 
+                                _clients[1].addr, _clients[1].amount);
     }
 
     /**
@@ -130,7 +133,7 @@ contract VirtualBank {
             emit Deposit("Bob", msg.sender, msg.value);
 
         } else {
-            throw;
+            revert();
         }
 
         // If both Alice and Bob have deposited fund, virtual bank begin running.
@@ -148,8 +151,8 @@ contract VirtualBank {
      * @param freezeTime        The freeze time for attacker's findelity bond.
      * @param defenderSignature The defender's signature.
      */
-    function cashRsmc(uint32 sequence, uint256[2] amounts, address revocationLock, 
-                      uint freezeTime, bytes defenderSignature) 
+    function cashRsmc(uint32 sequence, uint256[2] calldata amounts, address revocationLock, 
+                      uint freezeTime, bytes calldata defenderSignature) 
                 external isRunning() validAddress(revocationLock) {
 
         require((amounts[0] + amounts[1]) == (_clients[0].amount + _clients[1].amount), 
@@ -186,19 +189,19 @@ contract VirtualBank {
      *                          both time lock and hash lock are satisfied.
      * @param defenderSignature The defender's signature.
      */
-    function cashHtlc(uint32  sequence,        uint256[2] rsmcAmounts, 
+    function cashHtlc(uint32  sequence,    uint256[2] calldata rsmcAmounts, 
                   address revocationLock,  uint       freezeTime, 
-                  bytes32 hashLock,        bytes      preimage,
-                  uint    timeLock,        uint[2]    htlcAmounts,
-                  bytes   defenderSignature) 
+                  bytes32 hashLock,        bytes      calldata preimage,
+                  uint    timeLock,        uint[2]    calldata htlcAmounts,
+                  bytes   calldata defenderSignature) 
             external isRunning() validAddress(revocationLock){
 
         // check rsmcAmounts
-        require((rsmcAmounts[0] + rsmcAmounts[1]) == (_clients[0].balance + _clients[1].balance), 
+        require((rsmcAmounts[0] + rsmcAmounts[1]) == (_clients[0].amount + _clients[1].amount), 
                 "rsmcAmounts total amount doesn't match.");
 
         // check htlcAmounts
-        require((htlcAmounts[0] + htlcAmounts[1]) == (_clients[0].balance + _clients[1].balance), 
+        require((htlcAmounts[0] + htlcAmounts[1]) == (_clients[0].amount + _clients[1].amount), 
                 "htlcAmounts total amount doesn't match.");
 
         // identify attacker's index
@@ -241,21 +244,21 @@ contract VirtualBank {
 
         require(now >= _commitment.requestTime + _commitment.freezeTime);
 
-        state = State.Closed;
+        _state = State.Closed;
         emit VirtualBankClosed();
 
         // send fidelity bond back to attacker
         uint attacker = _commitment.attacker;
         uint256 amount = _commitment.amounts[attacker];
-        msg.sender.send(amount);
-        emit Withdraw(sequence, NAMES[attacker], msg.sender, amount);
+        msg.sender.transfer(amount);
+        emit Withdraw(_commitment.sequence, NAMES[attacker], msg.sender, amount);
     }
 
     /**
      * @notice Defender solve the revocation lock, withdraws attacker's fidelity bond as penalty.
      * @param revocationSignature  Defender's signature to open the revocation lock.
      */
-    function withdrawByDefender(bytes revocationSignature) 
+    function withdrawByDefender( bytes calldata revocationSignature) 
             external isAuditing() onlyDefender(msg.sender) {
         uint attacker = _commitment.attacker;
         uint defender = 1 - attacker;
@@ -266,13 +269,13 @@ contract VirtualBank {
         emit RevocationLockOpened( _commitment.sequence, now, _commitment.revocationLock);
 
         // Close virtual bank;
-        state = State.Closed;
+        _state = State.Closed;
         emit VirtualBankClosed();
 
         // send fidelity bond to defender
         uint256 amount = _commitment.amounts[attacker];
-        msg.sender.send(amount);
-        emit Withdraw(sequence, NAMES[defender], msg.sender, amount);
+        msg.sender.transfer(amount);
+        emit Withdraw(_commitment.sequence, NAMES[defender], msg.sender, amount);
     }
 
     /**
@@ -286,7 +289,7 @@ contract VirtualBank {
      *                          the start time of fidelity bond freezing.
      * @param freezeTime        How long attacker's findelity bond will be freezed.
      */
-    function _doCommitment(uint32 sequence, uint8 attacker, uint256[2] amounts, 
+    function _doCommitment(uint32 sequence, uint8 attacker, uint256[2] memory amounts, 
             address revocationLock, uint requestTime, uint freezeTime) 
             internal {
         _commitment.sequence = sequence;
@@ -297,12 +300,13 @@ contract VirtualBank {
         _commitment.amounts[0] = amounts[0];
         _commitment.amounts[1] = amounts[1];
 
-        state = State.Auditing;
+        _state = State.Auditing;
         emit VirtualBankAuditing();
 
         // send fund to defender now
         uint8 defender = 1 - attacker;
-        _clients[defender].addr.send(amounts[defender]);
+        address payable defenderAddr = address(uint160(_clients[defender].addr));
+        defenderAddr.transfer(amounts[defender]);
 
         emit Withdraw(sequence, NAMES[defender], _clients[defender].addr, amounts[defender]);
         emit FreezeFidelityBond(sequence, NAMES[attacker], amounts[attacker], revocationLock, 
@@ -319,7 +323,7 @@ contract VirtualBank {
         } else if (msg.sender == _clients[1].addr) {
             attacker = 1;
         } else {
-            throw;
+            revert();
         }
     }
 
@@ -330,7 +334,7 @@ contract VirtualBank {
      * @param expectedAddr  expected address
      * @return If the signature match the expected address.
      */
-    function checkSignature( bytes32 msgHash, bytes signature, address expectedAddr) internal pure returns (bool){
+    function checkSignature( bytes32 msgHash, bytes memory signature, address expectedAddr) internal pure returns (bool){
 
         //bytes32 msgHash = keccak256(abi.encodePacked(owner, amount, nonce));
         bytes32 messageHash = msgHash.toEthSignedMessageHash();
