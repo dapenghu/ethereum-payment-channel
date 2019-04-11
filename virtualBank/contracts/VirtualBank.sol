@@ -38,9 +38,9 @@ contract VirtualBank {
     Commitment  _commitment;
 
     // Event for Virtual Bank State Transition
-    event VirtualBankFunding(address alice, uint256 amountAlice, address bob, uint256 amountBob);
+    event VirtualBankFunding(uint160 alice, uint256 amountAlice, uint160 bob, uint256 amountBob);
 
-    event VirtualBankRunning(address alice, uint256 amountAlice, address bob, uint256 amountBob);
+    event VirtualBankRunning(uint160 alice, uint256 amountAlice, uint160 bob, uint256 amountBob);
 
     event VirtualBankAuditing();
 
@@ -54,18 +54,16 @@ contract VirtualBank {
     event Withdraw(uint32 sequence, string recipient, address addr, uint256 amount);
 
     // Event for Commitment Message
-    event CommitmentRSMC(uint32 sequence, string attacker, 
-                        uint256 amountAlice, uint256 amountBob, address revocationLock, uint requestTime, uint freezeTime);
+    event ProcessCommitment(uint32 sequence, string attacker);
+
+    event RSMCPart(uint256 amountAlice, uint256 amountBob, 
+                   address revocationLock, uint expireTime);
+
+    event HTLCPart( uint amountAliceHTLC, uint amountBobHTLC,
+                    bytes32 hashLock,  bytes preimage, 
+                    uint timeLock);
 
     event RevocationLockOpened(uint32 sequence, uint requestTime, address revocationLock);
-
-    event CommitmentHTLC1(uint32 sequence, string attacker);
-
-    event CommitmentHTLC2(uint256 amountAliceRSMC, uint256 amountBobRSMC, 
-                          address revocationLock, uint expireTime);
-
-    event CommitmentHTLC3(bytes32 hashLock,  bytes preimage, uint timeLock, 
-                          uint amountAliceHTLC, uint amountBobHTLC);
 
     event TimeLockExpire(uint32 sequence, uint requestTime, uint timeLock);
 
@@ -108,20 +106,13 @@ contract VirtualBank {
      */
     constructor(uint160[2] memory addrs,  uint256[2] memory amounts) 
     public validAddress(address(addrs[0]))  validAddress(address(addrs[1])) {
-        // Client storage alice = Client(addrs[0], amounts[0], false);
-        // Client storage bob   = Client(addrs[1], amounts[1], false);
-        // _clients = [Client(alice), bob];
-        // _clients = new Client[](2);
-        // _addrs.push(addrs[0]);
-        // _addrs.push(addrs[1]);
         _addrs = [addrs[0], addrs[1]];
         _amounts = [amounts[0], amounts[1]];
         _depositeds = [false, false];
 
         _commitment = Commitment(0, 0, address(0), 0, 0, [uint256(0), 0]);
         _state = State.Funding;
-        // emit VirtualBankFunding(_addrs[0], _amounts[0], 
-        //                         _addrs[1], _amounts[1]);
+        emit VirtualBankFunding(_addrs[0], _amounts[0], _addrs[1], _amounts[1]);
     }
 
     /**
@@ -144,7 +135,7 @@ contract VirtualBank {
         // If both Alice and Bob have _depositeds fund, virtual bank begin running.
         if (_depositeds[0] && _depositeds[1]) {
             _state = State.Running;
-            // emit VirtualBankRunning(_addrs[0], _amounts[0], _addrs[1], _amounts[1]);
+            emit VirtualBankRunning(_addrs[0], _amounts[0], _addrs[1], _amounts[1]);
         }
     }
 
@@ -170,12 +161,13 @@ contract VirtualBank {
         // check defender's signature over sequence, revocation lock, new balance sheet, freeze time
         bytes32 msgHash = keccak256(abi.encodePacked(address(this), sequence, 
                                     amounts[0], amounts[1], revocationLock, freezeTime));
-        // require(checkSignature(msgHash, defenderSignature, _addrs[defender]));
+        require(checkSignature(msgHash, defenderSignature, address(_addrs[defender])));
         
         uint requestTime = now;
+        emit ProcessCommitment(sequence, NAMES[attacker]);
 
-        emit CommitmentRSMC(sequence, NAMES[attacker], amounts[0], amounts[1], 
-                            revocationLock, requestTime, freezeTime);
+        emit RSMCPart(amounts[0], amounts[1], 
+                      revocationLock, requestTime + freezeTime);
 
         _commitment.sequence = sequence;
         _commitment.attacker = attacker;
@@ -218,26 +210,25 @@ contract VirtualBank {
 
         // identify attacker's index
         uint8 attacker = findAttacker();
-        uint8 defender = 1- attacker;
+        // uint8 defender = 1- attacker;
 
         // check defender signature over parameters
         bytes32 msgHash = keccak256(abi.encodePacked(sequence, rsmcAmounts[0], 
                                     rsmcAmounts[1], revocationLock, freezeTime, hashLock, 
                                     timeLock, htlcAmounts[0], htlcAmounts[1]));
-        // require(checkSignature(msgHash, defenderSignature, _addrs[defender]));
+        require(checkSignature(msgHash, defenderSignature, address(_addrs[1- attacker])));
  
         uint requestTime = now;
 
-        // emit CommitmentHTLC1(sequence, NAMES[attacker]);
+        emit ProcessCommitment(sequence, NAMES[attacker]);
 
-        // emit CommitmentHTLC2(rsmcAmounts[0], rsmcAmounts[1], 
-        //                      revocationLock, requestTime + freezeTime);
+        emit RSMCPart(rsmcAmounts[0], rsmcAmounts[1], 
+                      revocationLock, requestTime + freezeTime);
 
-        // emit CommitmentHTLC3(hashLock, preimage, timeLock, htlcAmounts[0], htlcAmounts[1]);
-
+        emit HTLCPart(htlcAmounts[0], htlcAmounts[1], hashLock, preimage, timeLock);
         // check time lock
         if (requestTime >= timeLock){
-            // emit TimeLockExpire(sequence, requestTime, timeLock);
+            emit TimeLockExpire(sequence, requestTime, timeLock);
 
             // if time lock expire, handle this commitment as RSMC
             _commitment.sequence = sequence;
@@ -320,9 +311,16 @@ contract VirtualBank {
         address payable defenderAddr = address(_addrs[defender]);
         defenderAddr.transfer(_commitment.amounts[defender]);
 
-        // emit Withdraw(sequence, NAMES[defender], _clients[defender].addr, amounts[defender]);
-        // emit FreezeFidelityBond(sequence, NAMES[attacker], amounts[attacker], revocationLock, 
-        //                         requestTime + freezeTime);
+        emit Withdraw(_commitment.sequence, 
+                      NAMES[defender], 
+                      defenderAddr, 
+                      _commitment.amounts[defender]);
+
+        emit FreezeFidelityBond(_commitment.sequence, 
+                                NAMES[_commitment.attacker], 
+                                _commitment.amounts[_commitment.attacker], 
+                                _commitment.revocationLock, 
+                                _commitment.requestTime + _commitment.freezeTime);
     }
 
     /**
@@ -348,7 +346,6 @@ contract VirtualBank {
      */
     function checkSignature( bytes32 msgHash, bytes memory signature, address expectedAddr) internal pure returns (bool){
 
-        //bytes32 msgHash = keccak256(abi.encodePacked(owner, amount, nonce));
         bytes32 messageHash = msgHash.toEthSignedMessageHash();
 
         // Verify that the message's signer is the owner of the order
