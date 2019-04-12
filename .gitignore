@@ -17,3 +17,4 @@ trustless_clearing/*.lol
 
 virtualBank/node_modules/**
 virtualBank/package-lock.json
+trustless_clearing_tech/.texpadtmp/**
